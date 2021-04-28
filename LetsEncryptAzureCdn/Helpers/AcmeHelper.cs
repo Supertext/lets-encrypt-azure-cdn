@@ -68,7 +68,12 @@ namespace LetsEncryptAzureCdn.Helpers
 
             if (!challengeResult.Status.HasValue || challengeResult.Status.Value != Certes.Acme.Resource.ChallengeStatus.Valid)
             {
-                log.LogError("Unable to validate challenge - {0} - {1}", challengeResult.Error.Detail, string.Join('~', challengeResult.Error.Subproblems.Select(x => x?.Detail)));
+                log.LogError("Unable to validate challenge - {0}", challengeResult.Error.Detail);
+
+                if (challengeResult.Error?.Subproblems != null)
+                {
+                    log.LogError("Subproblems - {0}", String.Join('~', challengeResult.Error.Subproblems.Select(x => x?.Detail))));
+                }
                 throw new ChallengeValidationFailedException();
             }
         }
