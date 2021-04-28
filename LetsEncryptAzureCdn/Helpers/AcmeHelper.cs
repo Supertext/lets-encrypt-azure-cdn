@@ -52,7 +52,7 @@ namespace LetsEncryptAzureCdn.Helpers
         {
             var challengeResult = await challengeContext.Validate();
             int numberOfRetries = 0;
-            while (challengeResult.Status.HasValue && challengeResult.Status.Value == Certes.Acme.Resource.ChallengeStatus.Pending 
+            while (challengeResult.Status.HasValue && challengeResult.Status.Value == Certes.Acme.Resource.ChallengeStatus.Pending
                 && numberOfRetries <= maxNumberOfRetries)
             {
                 log.LogInformation($"Validation is pending. Will retry in 1 second. Number of retries - {numberOfRetries}");
@@ -68,7 +68,7 @@ namespace LetsEncryptAzureCdn.Helpers
 
             if (!challengeResult.Status.HasValue || challengeResult.Status.Value != Certes.Acme.Resource.ChallengeStatus.Valid)
             {
-                log.LogError("Unable to validate challenge - {0} - {1}", challengeResult.Error.Detail, string.Join('~', challengeResult.Error.Subproblems.Select(x => x.Detail)));
+                log.LogError("Unable to validate challenge - {0} - {1}", challengeResult.Error.Detail, string.Join('~', challengeResult.Error.Subproblems.Select(x => x?.Detail)));
                 throw new ChallengeValidationFailedException();
             }
         }
