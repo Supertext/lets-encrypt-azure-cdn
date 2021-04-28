@@ -12,9 +12,9 @@ namespace LetsEncryptAzureCdn
     public static class ApplyOrRenewCertificate
     {
         [FunctionName("ApplyOrRenewCertificate")]
-        public static async Task Run([TimerTrigger("0 17 23 * * *")] TimerInfo myTimer, ILogger log, ExecutionContext executionContext)
+        public static async Task Run([TimerTrigger("0 17 23 * * *")] TimerInfo myTimer, ILogger logger, ExecutionContext executionContext)
         {
-            log.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+            logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
             string subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId");
             var config = new ConfigurationBuilder()
@@ -28,51 +28,51 @@ namespace LetsEncryptAzureCdn
 
             foreach (var certifcate in certificateDetails)
             {
-                log.LogInformation($"Processing certificate - {certifcate.DomainName}");
-                var acmeHelper = new AcmeHelper(log);
+                logger.LogInformation($"Processing certificate - {certifcate.DomainName}");
+                var acmeHelper = new AcmeHelper(logger);
                 var certificateHelper = new KeyVaultCertificateHelper(certifcate.KeyVaultName);
 
-                await InitAcme(log, certifcate, acmeHelper);
+                await InitAcme(logger, certifcate, acmeHelper);
 
                 string domainName = certifcate.DomainName;
                 if (domainName.StartsWith("*"))
                 {
                     domainName = domainName.Substring(1);
                 }
-                log.LogInformation($"Calculated domain name is {domainName}");
+                logger.LogInformation($"Calculated domain name is {domainName}");
 
                 string keyVaultCertificateName = domainName.Replace(".", "");
-                log.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
+                logger.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
                 var certificateExpiry = await certificateHelper.GetCertificateExpiryAsync(keyVaultCertificateName);
                 if (certificateExpiry.HasValue && certificateExpiry.Value.Subtract(DateTime.UtcNow).TotalDays > 7)
                 {
-                    log.LogInformation("No certificates to renew.");
+                    logger.LogInformation("No certificates to renew.");
                     continue;
                 }
 
-                log.LogInformation("Creating order for certificates");
+                logger.LogInformation("Creating order for certificates");
 
                 await acmeHelper.CreateOrderAsync(certifcate.DomainName);
-                log.LogInformation("Authorization created");
+                logger.LogInformation("Authorization created");
 
-                await FetchAndCreateDnsRecords(log, subscriptionId, certifcate, acmeHelper, domainName);
-                log.LogInformation("Validating DNS challenge");
+                await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
+                logger.LogInformation("Validating DNS challenge");
 
                 await acmeHelper.ValidateDnsAuthorizationAsync();
-                log.LogInformation("Challenge validated");
+                logger.LogInformation("Challenge validated");
 
                 string password = Guid.NewGuid().ToString();
                 var pfx = await acmeHelper.GetPfxCertificateAsync(password, certifcate.CertificateCountryName, certifcate.CertificateState, certifcate.CertificateLocality,
                     certifcate.CertificateOrganization, certifcate.CertificateOrganizationUnit, certifcate.DomainName, domainName);
-                log.LogInformation("Certificate built");
+                logger.LogInformation("Certificate built");
 
                 (string certificateName, string certificateVerison) = await certificateHelper.ImportCertificate(keyVaultCertificateName, pfx, password);
-                log.LogInformation("Certificate imported");
+                logger.LogInformation("Certificate imported");
 
                 var cdnHelper = new CdnHelper(subscriptionId);
                 await cdnHelper.EnableHttpsForCustomDomain(certifcate.CdnResourceGroup, certifcate.CdnProfileName,
                     certifcate.CdnEndpointName, certifcate.CdnCustomDomainName, certificateName, certificateVerison, certifcate.KeyVaultName);
-                log.LogInformation("HTTPS enabling started");
+                logger.LogInformation("HTTPS enabling started");
             }
         }
 

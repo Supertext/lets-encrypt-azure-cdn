@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 env:
-  AZURE_FUNCTIONAPP_NAME: fa-certificate-renewal-prod-001
+  AZURE_FUNCTIONAPP_NAME: cdn-cert-renewal-dev-supertext
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
   DOTNET_VERSION: '3.1.x'
 
