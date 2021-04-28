@@ -70,8 +70,8 @@ namespace LetsEncryptAzureCdn
             await acmeHelper.CreateOrderAsync(certifcate.DomainName);
             logger.LogInformation("Authorization created");
 
-            //await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
-            //logger.LogInformation("Validating DNS challenge");
+            await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
+            logger.LogInformation("Validating DNS challenge");
 
             await acmeHelper.ValidateDnsAuthorizationAsync();
             logger.LogInformation("Challenge validated");
@@ -103,14 +103,14 @@ namespace LetsEncryptAzureCdn
 
         private static async Task FetchAndCreateDnsRecords(ILogger log, string subscriptionId, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper, string domainName)
         {
-            var dnsHelper = new DnsHelper(subscriptionId);
+            //var dnsHelper = new DnsHelper(subscriptionId);
             log.LogInformation("Fetching DNS authorization");
             var dnsText = await acmeHelper.GetDnsAuthorizationTextAsync();
             var dnsName = ("_acme-challenge." + domainName).Replace("." + certifcate.DnsZoneName, "").Trim();
             log.LogInformation($"Got DNS challenge {dnsText} for {dnsName}");
-            await CreateDnsTxtRecordsIfNecessary(log, certifcate, dnsHelper, dnsText, dnsName);
-            log.LogInformation("Waiting 60 seconds for DNS propagation");
-            await Task.Delay(60 * 1000);
+            //await CreateDnsTxtRecordsIfNecessary(log, certifcate, dnsHelper, dnsText, dnsName);
+            //log.LogInformation("Waiting 60 seconds for DNS propagation");
+            //await Task.Delay(60 * 1000);
         }
 
         private static async Task InitAcme(ILogger log, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper)
