@@ -72,7 +72,7 @@ namespace LetsEncryptAzureCdn.Helpers
 
                 if (challengeResult.Error?.Subproblems != null)
                 {
-                    log.LogError("Subproblems - {0}", String.Join('~', challengeResult.Error.Subproblems.Select(x => x?.Detail))));
+                    log.LogError("Subproblems - {0}", String.Join('~', challengeResult.Error.Subproblems.Select(x => x?.Detail)));
                 }
                 throw new ChallengeValidationFailedException();
             }
