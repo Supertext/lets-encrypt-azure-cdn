@@ -70,11 +70,11 @@ namespace LetsEncryptAzureCdn
             await acmeHelper.CreateOrderAsync(certifcate.DomainName);
             logger.LogInformation("Authorization created");
 
-            await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
-            logger.LogInformation("Validating DNS challenge");
+            // await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
+            // logger.LogInformation("Validating DNS challenge");
 
-            await acmeHelper.ValidateDnsAuthorizationAsync();
-            logger.LogInformation("Challenge validated");
+            // await acmeHelper.ValidateDnsAuthorizationAsync();
+            // logger.LogInformation("Challenge validated");
 
             string password = Guid.NewGuid().ToString();
             var pfx = await acmeHelper.GetPfxCertificateAsync(password,
