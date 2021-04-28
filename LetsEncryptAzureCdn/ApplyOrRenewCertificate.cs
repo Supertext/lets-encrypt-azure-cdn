@@ -70,11 +70,11 @@ namespace LetsEncryptAzureCdn
             await acmeHelper.CreateOrderAsync(certifcate.DomainName);
             logger.LogInformation("Authorization created");
 
-            // await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
-            // logger.LogInformation("Validating DNS challenge");
+            await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
+            logger.LogInformation("Validating DNS challenge");
 
-            // await acmeHelper.ValidateDnsAuthorizationAsync();
-            // logger.LogInformation("Challenge validated");
+            await acmeHelper.ValidateDnsAuthorizationAsync();
+            logger.LogInformation("Challenge validated");
 
             string password = Guid.NewGuid().ToString();
             var pfx = await acmeHelper.GetPfxCertificateAsync(password,
@@ -110,7 +110,7 @@ namespace LetsEncryptAzureCdn
             log.LogInformation($"Got DNS challenge {dnsText} for {dnsName}");
             //await CreateDnsTxtRecordsIfNecessary(log, certifcate, dnsHelper, dnsText, dnsName);
             //log.LogInformation("Waiting 60 seconds for DNS propagation");
-            //await Task.Delay(60 * 1000);
+            await Task.Delay(60 * 1000);
         }
 
         private static async Task InitAcme(ILogger log, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper)
