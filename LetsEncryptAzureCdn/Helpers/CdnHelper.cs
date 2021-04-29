@@ -22,8 +22,12 @@ namespace LetsEncryptAzureCdn.Helpers
             this.subscriptionId = subscriptionId;
         }
 
-        public async Task EnableHttpsForCustomDomain(string resourceGroupName, string cdnProfileName, string cdnEndpointName,
-            string cdnCustomDomainName, string certificateName, string certificateVersion, string keyVaultName)
+        public async Task EnableHttpsForCustomDomain(string resourceGroupName,
+                                                     string cdnProfileName,
+                                                     string cdnEndpointName,
+                                                     string cdnCustomDomainName,
+                                                     string certificateName,
+                                                     string keyVaultName)
         {
             await cdnManagementClient.CustomDomains.EnableCustomHttpsAsync(resourceGroupName, cdnProfileName, cdnEndpointName,
                 cdnCustomDomainName, new UserManagedHttpsParameters
