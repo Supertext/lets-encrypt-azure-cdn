@@ -2,9 +2,6 @@
 using Microsoft.Azure.Management.Cdn.Models;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Rest;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace LetsEncryptAzureCdn.Helpers
@@ -26,7 +23,7 @@ namespace LetsEncryptAzureCdn.Helpers
         }
 
         public async Task EnableHttpsForCustomDomain(string resourceGroupName, string cdnProfileName, string cdnEndpointName,
-            string cdnCustomDomainName, string certificateName, string certificateVerison, string keyVaultName)
+            string cdnCustomDomainName, string certificateName, string certificateVersion, string keyVaultName)
         {
             await cdnManagementClient.CustomDomains.EnableCustomHttpsAsync(resourceGroupName, cdnProfileName, cdnEndpointName,
                 cdnCustomDomainName, new UserManagedHttpsParameters
@@ -34,7 +31,7 @@ namespace LetsEncryptAzureCdn.Helpers
                     CertificateSourceParameters = new KeyVaultCertificateSourceParameters
                     {
                         SecretName = certificateName,
-                        SecretVersion = certificateVerison,
+                        SecretVersion = "Latest",
                         ResourceGroupName = resourceGroupName,
                         SubscriptionId = subscriptionId,
                         VaultName = keyVaultName
