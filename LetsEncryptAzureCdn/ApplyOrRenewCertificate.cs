@@ -31,6 +31,7 @@ namespace LetsEncryptAzureCdn
                 try
                 {
                     await CreateCertificateAsync(logger, certifcate, subscriptionId).ConfigureAwait(false);
+                    logger.LogInformation("************************************");
                 }
                 catch (Exception e)
                 {
@@ -96,6 +97,7 @@ namespace LetsEncryptAzureCdn
                                                        certifcate.CdnEndpointName,
                                                        certifcate.CdnCustomDomainName,
                                                        certificateName,
+                                                       certificateVerison,
                                                        certifcate.KeyVaultName);
             logger.LogInformation("HTTPS enabling started");
         }

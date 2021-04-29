@@ -1,8 +1,8 @@
-﻿using Microsoft.Azure.Management.Cdn;
+﻿using System.Threading.Tasks;
+using Microsoft.Azure.Management.Cdn;
 using Microsoft.Azure.Management.Cdn.Models;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Rest;
-using System.Threading.Tasks;
 
 namespace LetsEncryptAzureCdn.Helpers
 {
@@ -15,10 +15,7 @@ namespace LetsEncryptAzureCdn.Helpers
         {
             var azureServiceTokenProvider = new AzureServiceTokenProvider();
             var token = azureServiceTokenProvider.GetAccessTokenAsync("https://management.azure.com/").GetAwaiter().GetResult();
-            cdnManagementClient = new CdnManagementClient(new TokenCredentials(token))
-            {
-                SubscriptionId = subscriptionId
-            };
+            cdnManagementClient = new CdnManagementClient(new TokenCredentials(token)) {SubscriptionId = subscriptionId};
             this.subscriptionId = subscriptionId;
         }
 
@@ -27,22 +24,26 @@ namespace LetsEncryptAzureCdn.Helpers
                                                      string cdnEndpointName,
                                                      string cdnCustomDomainName,
                                                      string certificateName,
+                                                     string certificateVersion,
                                                      string keyVaultName)
         {
-            await cdnManagementClient.CustomDomains.EnableCustomHttpsAsync(resourceGroupName, cdnProfileName, cdnEndpointName,
-                cdnCustomDomainName, new UserManagedHttpsParameters
-                {
-                    CertificateSourceParameters = new KeyVaultCertificateSourceParameters
-                    {
-                        SecretName = certificateName,
-                        SecretVersion = "Latest",
-                        ResourceGroupName = resourceGroupName,
-                        SubscriptionId = subscriptionId,
-                        VaultName = keyVaultName
-                    },
-                    MinimumTlsVersion = MinimumTlsVersion.TLS12,
-                    ProtocolType = "ServerNameIndication"
-                });
+            await cdnManagementClient.CustomDomains.EnableCustomHttpsAsync(resourceGroupName,
+                                                                           cdnProfileName,
+                                                                           cdnEndpointName,
+                                                                           cdnCustomDomainName,
+                                                                           new UserManagedHttpsParameters
+                                                                           {
+                                                                               CertificateSourceParameters = new KeyVaultCertificateSourceParameters
+                                                                                                             {
+                                                                                                                 SecretName = certificateName,
+                                                                                                                 SecretVersion = certificateVersion,
+                                                                                                                 ResourceGroupName = resourceGroupName,
+                                                                                                                 SubscriptionId = subscriptionId,
+                                                                                                                 VaultName = keyVaultName
+                                                                                                             },
+                                                                               MinimumTlsVersion = MinimumTlsVersion.TLS12,
+                                                                               ProtocolType = "ServerNameIndication"
+                                                                           });
         }
     }
 }
