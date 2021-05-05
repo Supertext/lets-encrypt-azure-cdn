@@ -23,7 +23,7 @@ namespace LetsEncryptAzureCdn
         }
 
         [FunctionName("ApplyOrRenewCertificate")]
-        public async Task Run([TimerTrigger("0 17 23 * * *")] TimerInfo myTimer, ExecutionContext executionContext)
+        public async Task Run([TimerTrigger("0 30 2 * * *")] TimerInfo myTimer, ExecutionContext executionContext)
         {
             try
             {
