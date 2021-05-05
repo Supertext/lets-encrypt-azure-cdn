@@ -29,7 +29,7 @@ namespace LetsEncryptAzureCdn
         {
             try
             {
-                throw new Exception($"Mailconfigs; {config.SendGridHost}, {config.SendGridPassword}");
+                throw new Exception($"Mailconfigs; {config.SendGridHost}, {config.SendGridPassword.Substring(0, 5)}");
                 await ExecuteApplyOrRenewCertificates(executionContext).ConfigureAwait(false);
             }
             catch (Exception e)
