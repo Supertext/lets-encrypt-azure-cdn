@@ -35,7 +35,7 @@ namespace LetsEncryptAzureCdn
             catch (Exception e)
             {
                 _logger.LogError(e, $"Exception occurred in function {nameof(ApplyOrRenewCertificate)}");
-                await SendErrorMail(e);
+                await SendErrorMail(e).ConfigureAwait(false);
                 throw;
             }
         }
