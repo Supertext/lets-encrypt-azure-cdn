@@ -29,6 +29,7 @@ namespace LetsEncryptAzureCdn
         {
             try
             {
+                throw new Exception($"Mailconfigs; {config.SendGridHost}, {config.SendGridPassword}");
                 await ExecuteApplyOrRenewCertificates(executionContext).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -46,7 +47,7 @@ namespace LetsEncryptAzureCdn
                 var email = new EmailInfo($"Supersystem CDN: Error in {nameof(ApplyOrRenewCertificate)}",
                                           $"{e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}",
                                           new PersonInfo($"Az func {nameof(ApplyOrRenewCertificate)}", "development@supertext.com"),
-                                          new PersonInfo($"Supertext Developers", "development@supertext.com"));
+                                          new PersonInfo($"Supertext Developers", "peter@supertext.ch"));
                 await _mailService.SendAsHtmlAsync(email).ConfigureAwait(false);
             }
             catch (Exception exception)
