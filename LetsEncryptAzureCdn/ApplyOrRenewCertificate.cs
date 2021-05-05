@@ -13,10 +13,10 @@ namespace LetsEncryptAzureCdn
 {
     public class ApplyOrRenewCertificate : Disposable
     {
-        private readonly ILogger<ApplyOrRenewCertificate> _logger;
+        private readonly ILogger _logger;
         private readonly IMailService _mailService;
 
-        public ApplyOrRenewCertificate(ILogger<ApplyOrRenewCertificate> logger, IMailService mailService)
+        public ApplyOrRenewCertificate(ILogger logger, IMailService mailService)
         {
             _logger = logger;
             _mailService = mailService;
