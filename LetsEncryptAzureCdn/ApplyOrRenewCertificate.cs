@@ -1,27 +1,56 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Autofac.Util;
 using LetsEncryptAzureCdn.Helpers;
 using LetsEncryptAzureCdn.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Supertext.Base.Net.Mail;
 
 namespace LetsEncryptAzureCdn
 {
-    public static class ApplyOrRenewCertificate
+    public class ApplyOrRenewCertificate : Disposable
     {
-        [FunctionName("ApplyOrRenewCertificate")]
-        public static async Task Run([TimerTrigger("0 17 23 * * *")] TimerInfo myTimer, ILogger logger, ExecutionContext executionContext)
-        {
-            logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+        private readonly ILogger<ApplyOrRenewCertificate> _logger;
+        private readonly IMailService _mailService;
 
-            string subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId");
+        public ApplyOrRenewCertificate(ILogger<ApplyOrRenewCertificate> logger, IMailService mailService)
+        {
+            _logger = logger;
+            _mailService = mailService;
+        }
+
+        [FunctionName("ApplyOrRenewCertificate")]
+        public async Task Run([TimerTrigger("0 17 23 * * *")] TimerInfo myTimer, ExecutionContext executionContext)
+        {
+            try
+            {
+                await ExecuteApplyOrRenewCertificates(executionContext).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, $"Exception occurred in function {nameof(ApplyOrRenewCertificate)}");
+                var email = new EmailInfo($"Supersystem CDN: Error in {nameof(ApplyOrRenewCertificate)}",
+                                          $"{e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}",
+                                          new PersonInfo($"Az func {nameof(ApplyOrRenewCertificate)}", "development@supertext.com"),
+                                          new PersonInfo($"Supertext Developers", "development@supertext.com"));
+                await _mailService.SendAsHtmlAsync(email).ConfigureAwait(false);
+                throw;
+            }
+        }
+
+        private async Task ExecuteApplyOrRenewCertificates(ExecutionContext executionContext)
+        {
+            _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
+
+            var subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId");
             var config = new ConfigurationBuilder()
-                                .SetBasePath(executionContext.FunctionAppDirectory)
-                                .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-                                .AddEnvironmentVariables()
-                                .Build();
+                         .SetBasePath(executionContext.FunctionAppDirectory)
+                         .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+                         .AddEnvironmentVariables()
+                         .Build();
 
             var certificateDetails = new List<CertificateRenewalInputModel>();
             config.GetSection("CertificateDetails").Bind(certificateDetails);
@@ -30,24 +59,24 @@ namespace LetsEncryptAzureCdn
             {
                 try
                 {
-                    await CreateCertificateAsync(logger, certifcate, subscriptionId).ConfigureAwait(false);
-                    logger.LogInformation("************************************");
+                    await CreateCertificateAsync(certifcate, subscriptionId).ConfigureAwait(false);
+                    _logger.LogInformation("************************************");
                 }
                 catch (Exception e)
                 {
-                    logger.LogError(e, "Creating certificate failed.");
+                    _logger.LogError(e, "Creating certificate failed.");
                     throw;
                 }
             }
         }
 
-        private static async Task CreateCertificateAsync(ILogger logger, CertificateRenewalInputModel certifcate, string subscriptionId)
+        private async Task CreateCertificateAsync(CertificateRenewalInputModel certifcate, string subscriptionId)
         {
-            logger.LogInformation($"Processing certificate - {certifcate.DomainName}");
-            var acmeHelper = new AcmeHelper(logger);
+            _logger.LogInformation($"Processing certificate - {certifcate.DomainName}");
+            var acmeHelper = new AcmeHelper(_logger);
             var certificateHelper = new KeyVaultCertificateHelper(certifcate.KeyVaultName);
 
-            await InitAcme(logger, certifcate, acmeHelper);
+            await InitAcme(_logger, certifcate, acmeHelper);
 
             string domainName = certifcate.DomainName;
             if (domainName.StartsWith("*"))
@@ -55,27 +84,27 @@ namespace LetsEncryptAzureCdn
                 domainName = domainName.Substring(1);
             }
 
-            logger.LogInformation($"Calculated domain name is {domainName}");
+            _logger.LogInformation($"Calculated domain name is {domainName}");
 
             string keyVaultCertificateName = domainName.Replace(".", "");
-            logger.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
+            _logger.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
             var certificateExpiry = await certificateHelper.GetCertificateExpiryAsync(keyVaultCertificateName);
             if (certificateExpiry.HasValue && certificateExpiry.Value.Subtract(DateTime.UtcNow).TotalDays > 7)
             {
-                logger.LogInformation("No certificates to renew.");
+                _logger.LogInformation("No certificates to renew.");
                 return;
             }
 
-            logger.LogInformation("Creating order for certificates");
+            _logger.LogInformation("Creating order for certificates");
 
             await acmeHelper.CreateOrderAsync(certifcate.DomainName);
-            logger.LogInformation("Authorization created");
+            _logger.LogInformation("Authorization created");
 
-            await FetchAndCreateDnsRecords(logger, subscriptionId, certifcate, acmeHelper, domainName);
-            logger.LogInformation("Validating DNS challenge");
+            await FetchAndCreateDnsRecords(_logger, subscriptionId, certifcate, acmeHelper, domainName);
+            _logger.LogInformation("Validating DNS challenge");
 
             await acmeHelper.ValidateDnsAuthorizationAsync();
-            logger.LogInformation("Challenge validated");
+            _logger.LogInformation("Challenge validated");
 
             string password = Guid.NewGuid().ToString();
             var pfx = await acmeHelper.GetPfxCertificateAsync(password,
@@ -86,10 +115,10 @@ namespace LetsEncryptAzureCdn
                                                               certifcate.CertificateOrganizationUnit,
                                                               certifcate.DomainName,
                                                               domainName);
-            logger.LogInformation("Certificate built");
+            _logger.LogInformation("Certificate built");
 
             (string certificateName, string certificateVerison) = await certificateHelper.ImportCertificate(keyVaultCertificateName, pfx, password);
-            logger.LogInformation("Certificate imported");
+            _logger.LogInformation("Certificate imported");
 
             var cdnHelper = new CdnHelper(subscriptionId);
             await cdnHelper.EnableHttpsForCustomDomain(certifcate.CdnResourceGroup,
@@ -99,7 +128,7 @@ namespace LetsEncryptAzureCdn
                                                        certificateName,
                                                        certificateVerison,
                                                        certifcate.KeyVaultName);
-            logger.LogInformation("HTTPS enabling started");
+            _logger.LogInformation("HTTPS enabling started");
         }
 
         private static async Task FetchAndCreateDnsRecords(ILogger log, string subscriptionId, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper, string domainName)
