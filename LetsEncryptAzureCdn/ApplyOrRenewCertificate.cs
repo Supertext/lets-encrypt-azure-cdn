@@ -15,11 +15,13 @@ namespace LetsEncryptAzureCdn
     {
         private readonly ILogger _logger;
         private readonly IMailService _mailService;
+        private readonly MailServiceConfig config;
 
-        public ApplyOrRenewCertificate(ILogger logger, IMailService mailService)
+        public ApplyOrRenewCertificate(ILogger logger, IMailService mailService, MailServiceConfig config)
         {
             _logger = logger;
             _mailService = mailService;
+            this.config = config;
         }
 
         [FunctionName("ApplyOrRenewCertificate")]
@@ -27,6 +29,7 @@ namespace LetsEncryptAzureCdn
         {
             try
             {
+                throw new Exception($"Mailconfigs; {config.SendGridHost}");
                 await ExecuteApplyOrRenewCertificates(executionContext).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -35,7 +38,7 @@ namespace LetsEncryptAzureCdn
                 var email = new EmailInfo($"Supersystem CDN: Error in {nameof(ApplyOrRenewCertificate)}",
                                           $"{e.Message}{Environment.NewLine}{e.StackTrace}{Environment.NewLine}",
                                           new PersonInfo($"Az func {nameof(ApplyOrRenewCertificate)}", "development@supertext.com"),
-                                          new PersonInfo($"Supertext Developers", "development@supertext.com"));
+                                          new PersonInfo($"Supertext Developers", "peter@supertext.ch"));
                 await _mailService.SendAsHtmlAsync(email).ConfigureAwait(false);
                 throw;
             }
