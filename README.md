@@ -106,7 +106,7 @@ This project makes use of an Azure functions app that will add the necessary DNS
 7.	Fork this repository 
 8.	Download the publish profile for your functions app and add it as a secret with name AZURE_FUNCTIONAPP_PUBLISH_PROFILE
 9.	Update the “AZURE_FUNCTIONAPP_NAME” to match your function name in “.github/workflows/build-deploy.yml”
-10.	Wait for the GitHub action to complete the deployment
+10.	Wait for the GitHub action to complete the deployment 
 11.	Either wait till 23:17 hours UTC or manually trigger the function by POSTing to https://<<URL for function app created in step 1>>/admin/functions/ApplyOrRenewCertificate
 12.	Wait for the certification propagation to complete 
 13.	Verify that your website is now being served with a new certificate
