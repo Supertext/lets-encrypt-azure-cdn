@@ -5,7 +5,7 @@ on:
     branches: [ master ]
 
 env:
-  AZURE_FUNCTIONAPP_NAME: cdn-cert-renewal-supertext
+  AZURE_FUNCTIONAPP_NAME: cert-renewal-supertext
   AZURE_FUNCTIONAPP_PACKAGE_PATH: '.'
   DOTNET_VERSION: '3.1.x'
   NUGET_URL: 'https://pkgs.dev.azure.com/supertext/_packaging/internal/nuget/v3/index.json'
