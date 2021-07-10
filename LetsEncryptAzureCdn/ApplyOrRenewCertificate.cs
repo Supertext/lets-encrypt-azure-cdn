@@ -13,15 +13,14 @@ namespace LetsEncryptAzureCdn
 {
     public class ApplyOrRenewCertificate : Disposable
     {
+        private const int ExpirationInDays = 30;
         private readonly ILogger _logger;
         private readonly IMailService _mailService;
-        private readonly MailServiceConfig config;
 
-        public ApplyOrRenewCertificate(ILogger logger, IMailService mailService, MailServiceConfig config)
+        public ApplyOrRenewCertificate(ILogger logger, IMailService mailService)
         {
             _logger = logger;
             _mailService = mailService;
-            this.config = config;
         }
 
         [FunctionName("ApplyOrRenewCertificate")]
@@ -104,7 +103,7 @@ namespace LetsEncryptAzureCdn
             string keyVaultCertificateName = domainName.Replace(".", "");
             _logger.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
             var certificateExpiry = await certificateHelper.GetCertificateExpiryAsync(keyVaultCertificateName);
-            if (certificateExpiry.HasValue && certificateExpiry.Value.Subtract(DateTime.UtcNow).TotalDays > 7)
+            if (certificateExpiry.HasValue && certificateExpiry.Value.Subtract(DateTime.UtcNow).TotalDays > ExpirationInDays)
             {
                 _logger.LogInformation("No certificates to renew.");
                 return;
