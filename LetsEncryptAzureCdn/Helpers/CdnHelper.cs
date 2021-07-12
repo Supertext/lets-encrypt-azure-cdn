@@ -19,7 +19,7 @@ namespace LetsEncryptAzureCdn.Helpers
             this.subscriptionId = subscriptionId;
         }
 
-        public async Task EnableHttpsForCustomDomain(string resourceGroupName,
+        public async Task EnableHttpsForCustomDomainAsync(string resourceGroupName,
                                                      string cdnProfileName,
                                                      string cdnEndpointName,
                                                      string cdnCustomDomainName,

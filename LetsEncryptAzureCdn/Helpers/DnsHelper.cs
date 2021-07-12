@@ -1,26 +1,22 @@
-﻿using Azure;
-using Microsoft.Azure.Management.Dns;
+﻿using Microsoft.Azure.Management.Dns;
 using Microsoft.Azure.Management.Dns.Models;
 using Microsoft.Azure.Services.AppAuthentication;
 using Microsoft.Rest;
 using Microsoft.Rest.Azure;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace LetsEncryptAzureCdn.Helpers
 {
     public class DnsHelper
     {
-        private readonly DnsManagementClient dnsManagementClient;
+        private readonly DnsManagementClient _dnsManagementClient;
 
         public DnsHelper(string subscriptionId)
         {
             var azureServiceTokenProvider = new AzureServiceTokenProvider();
             var token = azureServiceTokenProvider.GetAccessTokenAsync("https://management.azure.com/").GetAwaiter().GetResult();
-            dnsManagementClient = new DnsManagementClient(new TokenCredentials(token))
+            _dnsManagementClient = new DnsManagementClient(new TokenCredentials(token))
             {
                 SubscriptionId = subscriptionId
             };
@@ -30,7 +26,8 @@ namespace LetsEncryptAzureCdn.Helpers
         {
             try
             {
-                var result = await dnsManagementClient.RecordSets.GetAsync(resourceGroupName, dnsZoneName, recordName, RecordType.TXT);
+                var result = await _dnsManagementClient.RecordSets.GetAsync(resourceGroupName, dnsZoneName, recordName, RecordType.TXT)
+                                                      .ConfigureAwait(false);
                 if (result.TxtRecords.Count > 0)
                 {
                     return result.TxtRecords[0].Value;
@@ -53,9 +50,9 @@ namespace LetsEncryptAzureCdn.Helpers
             }
         }
 
-        public async Task CreateTxtRecord(string resourceGroupName, string dnsZoneName, string recordName, string recordValue)
+        public async Task CreateTxtRecordAsync(string resourceGroupName, string dnsZoneName, string recordName, string recordValue)
         {
-            await dnsManagementClient.RecordSets.CreateOrUpdateAsync(resourceGroupName, dnsZoneName, recordName, RecordType.TXT, new RecordSet
+            await _dnsManagementClient.RecordSets.CreateOrUpdateAsync(resourceGroupName, dnsZoneName, recordName, RecordType.TXT, new RecordSet
             {
                 TxtRecords = new List<TxtRecord>()
                     {
@@ -65,7 +62,7 @@ namespace LetsEncryptAzureCdn.Helpers
                         }
                     },
                 TTL = 3600
-            });
+            }).ConfigureAwait(false);
         }
     }
 }

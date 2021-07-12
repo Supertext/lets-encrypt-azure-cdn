@@ -38,26 +38,26 @@ namespace LetsEncryptAzureCdn.Helpers
 
         public async Task CreateOrderAsync(string domainName)
         {
-            orderContext = await acmeContext.NewOrder(new string[] { domainName });
+            orderContext = await acmeContext.NewOrder(new string[] { domainName }).ConfigureAwait(false);
         }
 
         public async Task<string> GetDnsAuthorizationTextAsync()
         {
             var authorization = (await orderContext.Authorizations()).First();
-            challengeContext = await authorization.Dns();
+            challengeContext = await authorization.Dns().ConfigureAwait(false);
             return acmeContext.AccountKey.DnsTxt(challengeContext.Token);
         }
 
         public async Task ValidateDnsAuthorizationAsync()
         {
-            var challengeResult = await challengeContext.Validate();
+            var challengeResult = await challengeContext.Validate().ConfigureAwait(false);
             int numberOfRetries = 0;
             while (challengeResult.Status.HasValue && challengeResult.Status.Value == Certes.Acme.Resource.ChallengeStatus.Pending
                 && numberOfRetries <= maxNumberOfRetries)
             {
                 log.LogInformation($"Validation is pending. Will retry in 1 second. Number of retries - {numberOfRetries}");
-                await Task.Delay(1 * 1000);
-                challengeResult = await challengeContext.Resource();
+                await Task.Delay(1 * 1000).ConfigureAwait(false);
+                challengeResult = await challengeContext.Resource().ConfigureAwait(false);
                 numberOfRetries += 1;
             }
 
@@ -90,7 +90,7 @@ namespace LetsEncryptAzureCdn.Helpers
                 Organization = certificateOrganization,
                 OrganizationUnit = certificateOrganizationUnit,
                 CommonName = domainName,
-            }, privateKey);
+            }, privateKey).ConfigureAwait(false);
             var pfxBuilder = cert.ToPfx(privateKey);
             return pfxBuilder.Build(friendlyName, password);
         }

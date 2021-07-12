@@ -28,17 +28,17 @@ namespace LetsEncryptAzureCdn
         {
             try
             {
-                await ExecuteApplyOrRenewCertificates(executionContext).ConfigureAwait(false);
+                await ExecuteApplyOrRenewCertificatesAsync(executionContext).ConfigureAwait(false);
             }
             catch (Exception e)
             {
                 _logger.LogError(e, $"Exception occurred in function {nameof(ApplyOrRenewCertificate)}");
-                await SendErrorMail(e).ConfigureAwait(false);
+                await SendErrorMailAsync(e).ConfigureAwait(false);
                 throw;
             }
         }
 
-        private async Task SendErrorMail(Exception e)
+        private async Task SendErrorMailAsync(Exception e)
         {
             try
             {
@@ -50,12 +50,12 @@ namespace LetsEncryptAzureCdn
             }
             catch (Exception exception)
             {
-                _logger.LogError(exception, $"Exception occurred while sending an error mail {nameof(SendErrorMail)}");
+                _logger.LogError(exception, $"Exception occurred while sending an error mail {nameof(SendErrorMailAsync)}");
                 throw;
             }
         }
 
-        private async Task ExecuteApplyOrRenewCertificates(ExecutionContext executionContext)
+        private async Task ExecuteApplyOrRenewCertificatesAsync(ExecutionContext executionContext)
         {
             _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
@@ -93,9 +93,9 @@ namespace LetsEncryptAzureCdn
             var acmeHelper = new AcmeHelper(_logger);
             var certificateHelper = new KeyVaultCertificateHelper(certifcate.KeyVaultName);
 
-            await InitAcme(_logger, certifcate, acmeHelper);
+            await InitAcmeAwait(_logger, certifcate, acmeHelper).ConfigureAwait(false);
 
-            string domainName = certifcate.DomainName;
+            var domainName = certifcate.DomainName;
             if (domainName.StartsWith("*"))
             {
                 domainName = domainName.Substring(1);
@@ -103,9 +103,9 @@ namespace LetsEncryptAzureCdn
 
             _logger.LogInformation($"Calculated domain name is {domainName}");
 
-            string keyVaultCertificateName = domainName.Replace(".", "");
+            var keyVaultCertificateName = domainName.Replace(".", "");
             _logger.LogInformation($"Getting expiry for {keyVaultCertificateName} in Key Vault certifictes");
-            var certificateExpiry = await certificateHelper.GetCertificateExpiryAsync(keyVaultCertificateName);
+            var certificateExpiry = await certificateHelper.GetCertificateExpiryAsync(keyVaultCertificateName).ConfigureAwait(false);
             if (certificateExpiry.HasValue && certificateExpiry.Value.Subtract(DateTime.UtcNow).TotalDays > ExpirationInDays)
             {
                 _logger.LogInformation("No certificates to renew.");
@@ -114,16 +114,16 @@ namespace LetsEncryptAzureCdn
 
             _logger.LogInformation("Creating order for certificates");
 
-            await acmeHelper.CreateOrderAsync(certifcate.DomainName);
+            await acmeHelper.CreateOrderAsync(certifcate.DomainName).ConfigureAwait(false);
             _logger.LogInformation("Authorization created");
 
-            await FetchAndCreateDnsRecords(_logger, subscriptionId, certifcate, acmeHelper, domainName);
+            await FetchAndCreateDnsRecordsAsync(_logger, subscriptionId, certifcate, acmeHelper, domainName).ConfigureAwait(false);
             _logger.LogInformation("Validating DNS challenge");
 
-            await acmeHelper.ValidateDnsAuthorizationAsync();
+            await acmeHelper.ValidateDnsAuthorizationAsync().ConfigureAwait(false);
             _logger.LogInformation("Challenge validated");
 
-            string password = Guid.NewGuid().ToString();
+            var password = Guid.NewGuid().ToString();
             var pfx = await acmeHelper.GetPfxCertificateAsync(password,
                                                               certifcate.CertificateCountryName,
                                                               certifcate.CertificateState,
@@ -131,45 +131,47 @@ namespace LetsEncryptAzureCdn
                                                               certifcate.CertificateOrganization,
                                                               certifcate.CertificateOrganizationUnit,
                                                               certifcate.DomainName,
-                                                              domainName);
+                                                              domainName)
+                                      .ConfigureAwait(false);
             _logger.LogInformation("Certificate built");
 
             (string certificateName, string certificateVerison) = await certificateHelper.ImportCertificate(keyVaultCertificateName, pfx, password);
             _logger.LogInformation("Certificate imported");
 
             var cdnHelper = new CdnHelper(subscriptionId);
-            await cdnHelper.EnableHttpsForCustomDomain(certifcate.CdnResourceGroup,
+            await cdnHelper.EnableHttpsForCustomDomainAsync(certifcate.CdnResourceGroup,
                                                        certifcate.CdnProfileName,
                                                        certifcate.CdnEndpointName,
                                                        certifcate.CdnCustomDomainName,
                                                        certificateName,
                                                        certificateVerison,
-                                                       certifcate.KeyVaultName);
+                                                       certifcate.KeyVaultName)
+                           .ConfigureAwait(false);
             _logger.LogInformation("HTTPS enabling started");
         }
 
-        private static async Task FetchAndCreateDnsRecords(ILogger log, string subscriptionId, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper, string domainName)
+        private static async Task FetchAndCreateDnsRecordsAsync(ILogger log, string subscriptionId, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper, string domainName)
         {
             var dnsHelper = new DnsHelper(subscriptionId);
             log.LogInformation("Fetching DNS authorization");
             var dnsText = await acmeHelper.GetDnsAuthorizationTextAsync();
             var dnsName = ("_acme-challenge." + domainName).Replace("." + certifcate.DnsZoneName, "").Trim();
             log.LogInformation($"Got DNS challenge {dnsText} for {dnsName}");
-            await CreateDnsTxtRecordsIfNecessary(log, certifcate, dnsHelper, dnsText, dnsName);
+            await CreateDnsTxtRecordsIfNecessaryAsync(log, certifcate, dnsHelper, dnsText, dnsName).ConfigureAwait(false);
             log.LogInformation("Waiting 60 seconds for DNS propagation");
-            await Task.Delay(60 * 1000);
+            await Task.Delay(60 * 1000).ConfigureAwait(false);
         }
 
-        private static async Task InitAcme(ILogger log, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper)
+        private static async Task InitAcmeAwait(ILogger log, CertificateRenewalInputModel certifcate, AcmeHelper acmeHelper)
         {
             var secretHelper = new KeyVaultSecretHelper(certifcate.KeyVaultName);
-            var acmeAccountPem = await secretHelper.GetSecretAsync("AcmeAccountKeyPem");
-            if (string.IsNullOrWhiteSpace(acmeAccountPem))
+            var acmeAccountPem = await secretHelper.GetSecretAsync("AcmeAccountKeyPem").ConfigureAwait(false);
+            if (String.IsNullOrWhiteSpace(acmeAccountPem))
             {
                 log.LogInformation("Acme Account not found.");
-                string pem = await acmeHelper.InitWithNewAccountAsync(Environment.GetEnvironmentVariable("AcmeAccountEmail"));
+                var pem = await acmeHelper.InitWithNewAccountAsync(Environment.GetEnvironmentVariable("AcmeAccountEmail"));
                 log.LogInformation("Acme account created");
-                await secretHelper.SetSecretAsync("AcmeAccountKeyPem", pem);
+                await secretHelper.SetSecretAsync("AcmeAccountKeyPem", pem).ConfigureAwait(false);
                 log.LogInformation("Secret uploaded to key vault");
             }
             else
@@ -178,12 +180,12 @@ namespace LetsEncryptAzureCdn
             }
         }
 
-        private static async Task CreateDnsTxtRecordsIfNecessary(ILogger log, CertificateRenewalInputModel certifcate, DnsHelper dnsHelper, string dnsText, string dnsName)
+        private static async Task CreateDnsTxtRecordsIfNecessaryAsync(ILogger log, CertificateRenewalInputModel certifcate, DnsHelper dnsHelper, string dnsText, string dnsName)
         {
-            var txtRecords = await dnsHelper.FetchTxtRecordsAsync(certifcate.DnsZoneResourceGroup, certifcate.DnsZoneName, dnsName);
+            var txtRecords = await dnsHelper.FetchTxtRecordsAsync(certifcate.DnsZoneResourceGroup, certifcate.DnsZoneName, dnsName).ConfigureAwait(false);
             if (txtRecords == null || !txtRecords.Contains(dnsText))
             {
-                await dnsHelper.CreateTxtRecord(certifcate.DnsZoneResourceGroup, certifcate.DnsZoneName, dnsName, dnsText);
+                await dnsHelper.CreateTxtRecordAsync(certifcate.DnsZoneResourceGroup, certifcate.DnsZoneName, dnsName, dnsText).ConfigureAwait(false);
                 log.LogInformation("Created DNS TXT records");
             }
         }
