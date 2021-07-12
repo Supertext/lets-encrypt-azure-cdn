@@ -67,6 +67,8 @@ namespace LetsEncryptAzureCdn
 
             var subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId") ?? config.GetSection("SubscriptionId").Value;
 
+            _logger.LogInformation($"Subscription id: {subscriptionId}");
+
             var certificateDetails = new List<CertificateRenewalInputModel>();
             config.GetSection("CertificateDetails").Bind(certificateDetails);
 

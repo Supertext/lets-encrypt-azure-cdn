@@ -16,9 +16,8 @@ namespace LetsEncryptAzureCdn
         {
             try
             {
-                builder
-                    .UseAppSettings(config => config.ConfigureConfigWithKeyVaultSecrets())
-                    .UseAutofacServiceProviderFactory(ConfigureContainer);
+                builder.UseAppSettings(config => config.ConfigureConfigWithKeyVaultSecrets())
+                       .UseAutofacServiceProviderFactory(ConfigureContainer);
             }
             catch (Exception e)
             {
@@ -30,16 +29,13 @@ namespace LetsEncryptAzureCdn
         private void ConfigureContainer(ContainerBuilder builder)
         {
             builder.RegisterModule<NetModule>();
-
             builder.RegisterAllConfigurationsInAssembly(typeof(MailServiceConfig).Assembly);
-
             // Register all functions that resides in a given namespace
             // The function class itself will be created using autofac
-            builder
-                .RegisterAssemblyTypes(typeof(Startup).Assembly)
-                .InNamespace(nameof(LetsEncryptAzureCdn))
-                .AsSelf() // Azure Functions core code resolves a function class by itself.
-                .InstancePerTriggerRequest(); // This will scope nested dependencies to each function execution
+            builder.RegisterAssemblyTypes(typeof(Startup).Assembly)
+                   .InNamespace(nameof(LetsEncryptAzureCdn))
+                   .AsSelf() // Azure Functions core code resolves a function class by itself.
+                   .InstancePerTriggerRequest(); // This will scope nested dependencies to each function execution
         }
     }
 }
