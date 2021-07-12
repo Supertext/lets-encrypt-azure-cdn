@@ -59,12 +59,13 @@ namespace LetsEncryptAzureCdn
         {
             _logger.LogInformation($"C# Timer trigger function executed at: {DateTime.Now}");
 
-            var subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId");
             var config = new ConfigurationBuilder()
                          .SetBasePath(executionContext.FunctionAppDirectory)
                          .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                          .AddEnvironmentVariables()
                          .Build();
+
+            var subscriptionId = Environment.GetEnvironmentVariable("SubscriptionId") ?? config.GetSection("SubscriptionId").Value;
 
             var certificateDetails = new List<CertificateRenewalInputModel>();
             config.GetSection("CertificateDetails").Bind(certificateDetails);
